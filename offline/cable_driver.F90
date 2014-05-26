@@ -47,7 +47,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    
    type (TdupVars) :: dup 
    type (TbufVars) :: buf 
-
+   
    logical, save :: first_call = .true.
    integer, save :: iDiag0 
    
@@ -60,6 +60,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    DOUBLE PRECISION ::                                                                     &
       trunk_sumbal = 0.0, & !
       new_sumbal = 0.0
+      integer :: ioerror
 
    ! END header
 
@@ -75,6 +76,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
       OPEN( 11, FILE = Ftrunk_sumbal,STATUS='old',ACTION='READ',IOSTAT=ioerror )
          IF(ioerror==0) then
             READ( 11, * ) trunk_sumbal  ! written by previous trunk version
+         ENDIF
       CLOSE(11)
    ENDIF
    
@@ -191,7 +193,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    
          IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
 
-#IF PROJECT 
+!#ifdef PROJECT 
 !JHAN: NEW CODE BLOCK STARTS HERE: this is where _cbm is called originally
 !JHAN: make a copy of met data per ktau as they are read in and 
 !JHAN: store in arrays with ktau element
@@ -317,7 +319,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    
          IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
 !JHAN: NEW CODE BLOCK ENDS HERE
-#ENDIF PROJECT 
+!#endif 
 
          ! CALL land surface scheme for this timestep, all grid points:
          CALL cbm( dels, air, bgc, canopy, met,                             &
@@ -415,7 +417,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    ! Close log file
    CLOSE(logn)
 
-END PROGRAM cable_offline_driver
+END subroutine cable_offline_driver
 
 
 SUBROUTINE prepareFiles(ncciy)
@@ -459,6 +461,7 @@ SUBROUTINE renameFiles(logn,inFile,nn,ncciy,inName)
 END SUBROUTINE renameFiles
 
 
+end module cable_driver_module
 
 
 
