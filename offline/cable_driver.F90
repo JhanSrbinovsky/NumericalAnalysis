@@ -193,7 +193,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    
          IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
 
-!#ifdef PROJECT 
+#ifdef PROJECT 
 !JHAN: NEW CODE BLOCK STARTS HERE: this is where _cbm is called originally
 !JHAN: make a copy of met data per ktau as they are read in and 
 !JHAN: store in arrays with ktau element
@@ -319,7 +319,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    
          IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
 !JHAN: NEW CODE BLOCK ENDS HERE
-!#endif 
+#endif 
 
          ! CALL land surface scheme for this timestep, all grid points:
          CALL cbm( dels, air, bgc, canopy, met,                             &

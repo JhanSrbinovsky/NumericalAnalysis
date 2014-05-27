@@ -1,0 +1,16 @@
+[1] "Running CABLE at Bondville97:"
+
+Program received signal SIGSEGV: Segmentation fault - invalid memory reference.
+
+Backtrace for this error:
+#0  0x10e83ae42
+#1  0x10e83b60e
+#2  0x7fff8b1b05a9
+#3  0x10e56483f
+#4  0x10e591991
+#5  0x10e6770e9
+#6  0x10e68655d
+#7  0x10e686595
+> proc.time()
+   user  system elapsed 
+  0.945   0.184   1.323 
