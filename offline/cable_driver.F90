@@ -65,7 +65,8 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    ! END header
    
    !jhan: put all of these in contained subrs of this _driver subr
-   call HeaderStep   
+   call HeaderStep()
+      
    ssnow%otss_0 = ssnow%tgg(:,1)
    ssnow%otss = ssnow%tgg(:,1)
    canopy%fes_cor = 0.
