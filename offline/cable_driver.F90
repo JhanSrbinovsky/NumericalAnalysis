@@ -312,6 +312,9 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
       
       new_sumbal = SUM(bal%wbal_tot) + SUM(bal%ebal_tot)                       &
                        + SUM(bal%ebal_tot_cncheck)
+         print *, "trunk_sumbal: ", trunk_sumbal
+         print *, "new_sumbal: ", new_sumbal
+         print *, ""
   
       IF( new_sumbal == trunk_sumbal) THEN
 
