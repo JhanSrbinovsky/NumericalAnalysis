@@ -57,94 +57,16 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
       Ftrunk_sumbal  = ".trunk_sumbal",                                        &
       Fnew_sumbal    = "new_sumbal"
 
-   DOUBLE PRECISION ::                                                                     &
+   DOUBLE PRECISION ::                                                         &
       trunk_sumbal = 0.0, & !
       new_sumbal = 0.0
       integer :: ioerror
 
    ! END header
-
-   ! Open, read and close the namelist file.
-   OPEN( 10, FILE = CABLE_NAMELIST )
-      READ( 10, NML=CABLE )   !where NML=CABLE defined above
-   CLOSE(10)
-   CALL CABLE_error_log( "Namelist finished read (driver)" )
-
-   ! Open, read and close the consistency check file.
-   ! Check triggered by cable_user%consistency_check = .TRUE. in cable.nml
-   IF(cable_user%consistency_check) THEN 
-      OPEN( 11, FILE = Ftrunk_sumbal,STATUS='old',ACTION='READ',IOSTAT=ioerror )
-         IF(ioerror==0) then
-            READ( 11, * ) trunk_sumbal  ! written by previous trunk version
-         ENDIF
-      CLOSE(11)
-   ENDIF
    
-   ! Open log file:
-   OPEN(logn,FILE=filename%log)
- 
-   CALL report_version_no( logn )
-    
-   IF( IARGC() > 0 ) THEN
-      CALL GETARG(1, filename%met)
-      CALL GETARG(2, casafile%cnpipool)
-      CALL CABLE_error_log( " CLI args to CABLE: ") 
-   ENDIF
-
-   cable_runtime%offline = .TRUE.
-   
-   ! associate pointers used locally with global definitions
-   CALL point2constants( C )
-   
-   ! StopGaps 
-   IF( l_casacnp  .AND. ( icycle == 0 .OR. icycle > 3 ) )                   &
-      STOP 'icycle must be 1 to 3 when using casaCNP'
-   IF( ( l_laiFeedbk .OR. l_vcmaxFeedbk ) .AND. ( .NOT. l_casacnp ) )       &
-      STOP 'casaCNP required to get prognostic LAI or Vcmax'
-   IF( l_vcmaxFeedbk .AND. icycle < 2 )                                     &
-      STOP 'icycle must be 2 to 3 to get prognostic Vcmax'
-   IF( icycle > 0 .AND. ( .NOT. soilparmnew ) )                             &
-      STOP 'casaCNP must use new soil parameters'
-
-   ! Check for gswp run
-   IF (ncciy /= 0) THEN
-      PRINT *, 'Looking for global offline run info.'
-      IF (ncciy < 1986 .OR. ncciy > 1995) THEN
-         PRINT *, 'Year ', ncciy, ' outside range of dataset!'
-         STOP 'Please check input in namelist file.'
-      ELSE
-         CALL prepareFiles(ncciy)
-      ENDIF
-   ENDIF
-   
-
-   ! Open met data and get site information from netcdf file.
-   ! This retrieves time step size, number of timesteps, starting date,
-   ! latitudes, longitudes, number of sites. 
-   CALL open_met_file( dels, kend, spinup, C%TFRZ )
- 
-   ! Checks where parameters and initialisations should be loaded from.
-   ! If they can be found in either the met file or restart file, they will 
-   ! load from there, with the met file taking precedence. Otherwise, they'll
-   ! be chosen from a coarse global grid of veg and soil types, based on 
-   ! the lat/lon coordinates. Allocation of CABLE's main variables also here.
-   CALL load_parameters( met, air, ssnow, veg, bgc,                            &
-                         soil, canopy, rough, rad, sum_flux,                   &
-                         bal, logn, vegparmnew, casabiome, casapool,           &
-                         casaflux, casamet, casabal, phen, C%EMSOIL,        &
-                         C%TFRZ )
-!JHAN: allocate duplicate vars as mp, kend                          
-   if( first_call ) then 
-      call alloc_DupVars(dup, kend)
-      ! can add another copy of vars to Buf vars
-      !call alloc_BufVars(buf, kend)
-      first_call = .false.
-   endif
-            
-   ! Open output file:
-   CALL open_output_file( dels, soil, veg, bgc, rough )
-   CALL CABLE_error_log( "output file opened" )
- 
+   !jhan: put all of these in contained subrs of this _driver subr
+   call HeaderStep()
+      
    ssnow%otss_0 = ssnow%tgg(:,1)
    ssnow%otss = ssnow%tgg(:,1)
    canopy%fes_cor = 0.
@@ -391,6 +313,9 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
       
       new_sumbal = SUM(bal%wbal_tot) + SUM(bal%ebal_tot)                       &
                        + SUM(bal%ebal_tot_cncheck)
+         print *, "trunk_sumbal: ", trunk_sumbal
+         print *, "new_sumbal: ", new_sumbal
+         print *, ""
   
       IF( new_sumbal == trunk_sumbal) THEN
 
@@ -416,6 +341,93 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
 
    ! Close log file
    CLOSE(logn)
+
+CONTAINS
+
+subroutine HeaderStep()   
+   ! Open, read and close the namelist file.
+   OPEN( 10, FILE = CABLE_NAMELIST )
+      READ( 10, NML=CABLE )   !where NML=CABLE defined above
+   CLOSE(10)
+   CALL CABLE_error_log( "Namelist finished read (driver)" )
+
+   ! Open, read and close the consistency check file.
+   ! Check triggered by cable_user%consistency_check = .TRUE. in cable.nml
+   IF(cable_user%consistency_check) THEN 
+      OPEN( 11, FILE = Ftrunk_sumbal,STATUS='old',ACTION='READ',IOSTAT=ioerror )
+         IF(ioerror==0) then
+            READ( 11, * ) trunk_sumbal  ! written by previous trunk version
+         ENDIF
+      CLOSE(11)
+   ENDIF
+   
+   ! Open log file:
+   OPEN(logn,FILE=filename%log)
+ 
+   CALL report_version_no( logn )
+    
+   IF( IARGC() > 0 ) THEN
+      CALL GETARG(1, filename%met)
+      CALL GETARG(2, casafile%cnpipool)
+      CALL CABLE_error_log( " CLI args to CABLE: ") 
+   ENDIF
+
+   cable_runtime%offline = .TRUE.
+   
+   ! associate pointers used locally with global definitions
+   CALL point2constants( C )
+   
+   ! StopGaps 
+   IF( l_casacnp  .AND. ( icycle == 0 .OR. icycle > 3 ) )                   &
+      STOP 'icycle must be 1 to 3 when using casaCNP'
+   IF( ( l_laiFeedbk .OR. l_vcmaxFeedbk ) .AND. ( .NOT. l_casacnp ) )       &
+      STOP 'casaCNP required to get prognostic LAI or Vcmax'
+   IF( l_vcmaxFeedbk .AND. icycle < 2 )                                     &
+      STOP 'icycle must be 2 to 3 to get prognostic Vcmax'
+   IF( icycle > 0 .AND. ( .NOT. soilparmnew ) )                             &
+      STOP 'casaCNP must use new soil parameters'
+
+   ! Check for gswp run
+   IF (ncciy /= 0) THEN
+      PRINT *, 'Looking for global offline run info.'
+      IF (ncciy < 1986 .OR. ncciy > 1995) THEN
+         PRINT *, 'Year ', ncciy, ' outside range of dataset!'
+         STOP 'Please check input in namelist file.'
+      ELSE
+         CALL prepareFiles(ncciy)
+      ENDIF
+   ENDIF
+   
+
+   ! Open met data and get site information from netcdf file.
+   ! This retrieves time step size, number of timesteps, starting date,
+   ! latitudes, longitudes, number of sites. 
+   CALL open_met_file( dels, kend, spinup, C%TFRZ )
+ 
+   ! Checks where parameters and initialisations should be loaded from.
+   ! If they can be found in either the met file or restart file, they will 
+   ! load from there, with the met file taking precedence. Otherwise, they'll
+   ! be chosen from a coarse global grid of veg and soil types, based on 
+   ! the lat/lon coordinates. Allocation of CABLE's main variables also here.
+   CALL load_parameters( met, air, ssnow, veg, bgc,                            &
+                         soil, canopy, rough, rad, sum_flux,                   &
+                         bal, logn, vegparmnew, casabiome, casapool,           &
+                         casaflux, casamet, casabal, phen, C%EMSOIL,        &
+                         C%TFRZ )
+!JHAN: allocate duplicate vars as mp, kend                          
+   if( first_call ) then 
+      call alloc_DupVars(dup, kend)
+      ! can add another copy of vars to Buf vars
+      !call alloc_BufVars(buf, kend)
+      first_call = .false.
+   endif
+            
+   ! Open output file:
+   CALL open_output_file( dels, soil, veg, bgc, rough )
+   CALL CABLE_error_log( "output file opened" )
+ 
+end subroutine HeaderStep   
+
 
 END subroutine cable_offline_driver
 

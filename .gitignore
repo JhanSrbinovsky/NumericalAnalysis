@@ -1,1 +1,14 @@
 /nbproject/
+
+build/new_sumbal
+
+.tmp/
+*.txt
+
+*.history
+
+test_offline/src/.Rhistory
+
+*.nc
+
+offline/cable
