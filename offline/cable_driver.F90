@@ -14,7 +14,8 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    use cable_driverData_mod
    use cable_def_types_mod, only : alloc_cbm_var
    
-   use cable_DUPlicate_types_mod, only : alloc_DupVars, set_Dupvars, Reset_Dupvars
+   use cable_DUPlicate_types_mod, only :                                       &
+      alloc_DupVars, set_Dupvars, Reset_Dupvars
    use cable_DUPlicate_types_mod, only : TDupVars
    
    !use cable_buffer_types_mod, only : alloc_BufVars, set_Bufvars, test_Bufvars
@@ -77,43 +78,17 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    ktau_tot = 0 
    
 !JHAN: take out main DO loop 
-!@   DO
+   !DO
 
       ! globally (WRT code) accessible kend through USE cable_common_module
       ktau_gl = 0
       kend_gl = kend
       knode_gl = 0
-!JHAN: original code, timestep starts here   
+
       ! time step loop over ktau
       DO ktau=kstart, kend 
-         
-         ! increment total timstep counter
-         ktau_tot = ktau_tot + 1
-         
-         ! globally (WRT code) accessible kend through USE cable_common_module
-         ktau_gl = ktau_gl + 1
-         
-         ! somethings (e.g. CASA-CNP) only need to be done once per day  
-         ktauday=int(24.0*3600.0/dels)
-         idoy = mod(ktau/ktauday,365)
-         IF(idoy==0) idoy=365
-         
-         ! needed for CASA-CNP
-         nyear =INT((kend-kstart+1)/(365*ktauday))
-   
-         canopy%oldcansto=canopy%cansto
-   
-         ! Get met data and LAI, set time variables.
-         ! Rainfall input may be augmented for spinup purposes:
-         met%ofsd = met%fsd(:,1) + met%fsd(:,2) 
-         CALL get_met_data( spinup, spinConv, met, soil,                    &
-                            rad, veg, kend, dels, C%TFRZ, ktau ) 
 
-         ! Feedback prognostic vcmax and daily LAI from casaCNP to CABLE
-         IF (l_vcmaxFeedbk) CALL casa_feedback( ktau, veg, casabiome,    &
-                                                casapool, casamet )
-   
-         IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
+         CALL astep_1()         
 
 #ifdef PROJECT 
 !JHAN: NEW CODE BLOCK STARTS HERE: this is where _cbm is called originally
@@ -428,6 +403,38 @@ subroutine HeaderStep()
  
 end subroutine HeaderStep   
 
+subroutine astep_1()         
+   ! increment total timstep counter
+   ktau_tot = ktau_tot + 1
+   
+   ! globally (WRT code) accessible kend through USE cable_common_module
+   ktau_gl = ktau_gl + 1
+   
+   ! somethings (e.g. CASA-CNP) only need to be done once per day  
+   ktauday=int(24.0*3600.0/dels)
+   idoy = mod(ktau/ktauday,365)
+   IF(idoy==0) idoy=365
+   
+   ! needed for CASA-CNP
+   nyear =INT((kend-kstart+1)/(365*ktauday))
+
+   canopy%oldcansto=canopy%cansto
+
+   ! Get met data and LAI, set time variables.
+   ! Rainfall input may be augmented for spinup purposes:
+   met%ofsd = met%fsd(:,1) + met%fsd(:,2) 
+   CALL get_met_data( spinup, spinConv, met, soil,                    &
+                      rad, veg, kend, dels, C%TFRZ, ktau ) 
+
+   ! Feedback prognostic vcmax and daily LAI from casaCNP to CABLE
+   IF (l_vcmaxFeedbk) CALL casa_feedback( ktau, veg, casabiome,    &
+                                          casapool, casamet )
+
+   IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
+
+end subroutine astep_1         
+
+!##############################################################################
 
 END subroutine cable_offline_driver
 
