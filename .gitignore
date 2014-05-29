@@ -1,1 +1,17 @@
 /nbproject/
+
+offline/.tmp/
+
+*.o
+
+*.mod
+
+test_offline/src/.Rhistory
+
+*.history
+
+*.nc
+
+*.txt
+
+offline/cable
