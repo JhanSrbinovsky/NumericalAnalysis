@@ -1,11 +1,11 @@
-module cable_driver_module
+module cable_driver1_module
    
    implicit none
    
 
 contains
 
-subroutine cable_offline_driver( met, air, canopy, rad, rough, &
+subroutine cable_orig_driver( met, air, canopy, rad, rough, &
                                  ssnow, soil, veg, bal,        &
                                  sum_flux, bgc, &
                                  casabiome, casapool, casaflux, &
@@ -65,11 +65,74 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
 
    ! END header
    
-   write(6,*) "Executing cable_driver PROJECT"
+   write(6,*) "Executing cable_driver ORIGINAL"
+   ! Open, read and close the namelist file.
+   OPEN( 10, FILE = CABLE_NAMELIST )
+      READ( 10, NML=CABLE )   !where NML=CABLE defined above
+   CLOSE(10)
 
-   !jhan: put all of these in contained subrs of this _driver subr
-   call HeaderStep()
+   ! Open log file:
+   OPEN(logn,FILE=filename%log)
+ 
+   CALL report_version_no( logn )
+    
+   IF( IARGC() > 0 ) THEN
+      CALL GETARG(1, filename%met)
+      CALL GETARG(2, casafile%cnpipool)
+   ENDIF
+
+    
+   cable_runtime%offline = .TRUE.
+   
+   ! associate pointers used locally with global definitions
+   CALL point2constants( C )
+    
+   IF( l_casacnp  .AND. ( icycle == 0 .OR. icycle > 3 ) )                   &
+      STOP 'icycle must be 1 to 3 when using casaCNP'
+   IF( ( l_laiFeedbk .OR. l_vcmaxFeedbk ) .AND. ( .NOT. l_casacnp ) )       &
+      STOP 'casaCNP required to get prognostic LAI or Vcmax'
+   IF( l_vcmaxFeedbk .AND. icycle < 2 )                                     &
+      STOP 'icycle must be 2 to 3 to get prognostic Vcmax'
+   IF( icycle > 0 .AND. ( .NOT. soilparmnew ) )                             &
+      STOP 'casaCNP must use new soil parameters'
+
+   ! Check for gswp run
+   IF (ncciy /= 0) THEN
       
+      PRINT *, 'Looking for global offline run info.'
+      
+      IF (ncciy < 1986 .OR. ncciy > 1995) THEN
+         PRINT *, 'Year ', ncciy, ' outside range of dataset!'
+         STOP 'Please check input in namelist file.'
+      ELSE
+         
+         CALL prepareFiles(ncciy)
+      
+      ENDIF
+   
+   ENDIF
+   
+
+   ! Open met data and get site information from netcdf file.
+   ! This retrieves time step size, number of timesteps, starting date,
+   ! latitudes, longitudes, number of sites. 
+   CALL open_met_file( dels, kend, spinup, C%TFRZ )
+ 
+   ! Checks where parameters and initialisations should be loaded from.
+   ! If they can be found in either the met file or restart file, they will 
+   ! load from there, with the met file taking precedence. Otherwise, they'll
+   ! be chosen from a coarse global grid of veg and soil types, based on 
+   ! the lat/lon coordinates. Allocation of CABLE's main variables also here.
+   CALL load_parameters( met, air, ssnow, veg, bgc,                            &
+                         soil, canopy, rough, rad, sum_flux,                   &
+                         bal, logn, vegparmnew, casabiome, casapool,           &
+                         casaflux, casamet, casabal, phen, C%EMSOIL,        &
+                         C%TFRZ )
+
+   
+   ! Open output file:
+   CALL open_output_file( dels, soil, veg, bgc, rough )
+ 
    ssnow%otss_0 = ssnow%tgg(:,1)
    ssnow%otss = ssnow%tgg(:,1)
    canopy%fes_cor = 0.
@@ -78,111 +141,14 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    
    ! outer loop - spinup loop no. ktau_tot :
    ktau_tot = 0 
-   
-!JHAN: take out main DO loop 
-   !DO
+   DO
 
       ! globally (WRT code) accessible kend through USE cable_common_module
       ktau_gl = 0
       kend_gl = kend
       knode_gl = 0
-
+      
       ! time step loop over ktau
-      DO ktau=kstart, kend 
-
-         CALL astep_1()         
-
-#ifdef PROJECT 
-!JHAN: NEW CODE BLOCK STARTS HERE: this is where _cbm is called originally
-!JHAN: make a copy of met data per ktau as they are read in and 
-!JHAN: store in arrays with ktau element
-         call set_DupVars( ktau, dup, met, bgc, soil, veg, ssnow, canopy, &
-                        rad, rough, air )
-
-         !print *,"jhan:STOP"
-         !STOP
-!JHAN: below re-sets these vars to NaN. "!!" therefore suggests they cannot be reset safely
-!JHAN: and need to be recorded at ktau level
-         CALL alloc_cbm_var(air,    mp)
-         !CALL alloc_cbm_var(bgc,   mp)
-         CALL alloc_cbm_var(canopy,mp)
-         CALL alloc_cbm_var(met,   mp)
-         !CALL alloc_cbm_var(bal,   mp)
-         CALL alloc_cbm_var(rad,   mp)
-         CALL alloc_cbm_var(rough, mp)
-         !CALL alloc_cbm_var(soil,  mp)
-         !CALL alloc_cbm_var(ssnow, mp)
-         !CALL alloc_cbm_var(veg,   mp)
-         !CALL alloc_cbm_var(sum_flux, mp)
-
-!JHAN: THIS IS COMMENTED OLD CODE in attempt to do only once
-!@         ! CALL land surface scheme for this timestep, all grid points:
-!@         CALL cbm( dels, air, bgc, canopy, met,                             &
-!@                   bal, rad, rough, soil, ssnow,                            &
-!@                   sum_flux, veg )
-!@         
-!@         ! resets met data per ktau from the copies made previously 
-!@         ! store in arrays with ktau element
-!@         call reset_DupVars( ktau, dup, met, bgc, soil,veg, ssnow, canopy, & 
-!@                        rad, rough, air )
-!@   
-!@         ! CALL land surface scheme for this timestep, all grid points:
-!@         CALL cbm( dels, air, bgc, canopy, met,                             &
-!@                   bal, rad, rough, soil, ssnow,                            &
-!@                   sum_flux, veg )
-!@         
-!@         CALL CABLE_error_log( "cbm finished" )
-!@         
-!@         ssnow%smelt = ssnow%smelt*dels
-!@         ssnow%rnof1 = ssnow%rnof1*dels
-!@         ssnow%rnof2 = ssnow%rnof2*dels
-!@         ssnow%runoff = ssnow%runoff*dels
-!@   
-!@   
-!@         !jhan this is insufficient testing. condition for 
-!@         !spinup=.false. & we want CASA_dump.nc (spinConv=.true.)
-!@         IF(icycle >0) THEN
-!@            call bgcdriver( ktau, kstart, kend, dels, met,                     &
-!@                            ssnow, canopy, veg, soil, casabiome,               &
-!@                            casapool, casaflux, casamet, casabal,              &
-!@                            phen, spinConv, spinup, ktauday, idoy,             &
-!@                            .FALSE., .FALSE. )
-!@         ENDIF 
-!@   
-!@         ! sumcflux is pulled out of subroutine cbm
-!@         ! so that casaCNP can be called before adding the fluxes (Feb 2008, YP)
-!@         CALL sumcflux( ktau, kstart, kend, dels, bgc,                         &
-!@                        canopy, soil, ssnow, sum_flux, veg,                    &
-!@                        met, casaflux, l_vcmaxFeedbk )
-!@   
-!@         ! Write time step's output to file if either: we're not spinning up 
-!@         ! or we're spinning up and the spinup has converged:
-!@         IF((.NOT.spinup).OR.(spinup.AND.spinConv))                            &
-!@            CALL write_output( dels, ktau, met, canopy, ssnow,                 &
-!@                               rad, bal, air, soil, veg, C%SBOLTZ,             &
-!@                               C%EMLEAF, C%EMSOIL )
-!@   
-!@         ! dump bitwise reproducible testing data
-!@         IF( cable_user%RUN_DIAG_LEVEL == 'zero') THEN
-!@            IF((.NOT.spinup).OR.(spinup.AND.spinConv))                         &
-!@               call cable_diag( iDiag0, "FLUXES", mp, kend, ktau,              &
-!@                                knode_gl, "FLUXES",                            &
-!@                          canopy%fe + canopy%fh )
-!@         ENDIF
-!@         
-!JHAN: END 	the timestep here - shows we cantread data and then call cbm in new loop - WHY?
-      END DO ! END Do loop over timestep ktau
-
-
-!JHAN: times set before DO loop over timestep
-      ktau_tot = 0 
-      ktau_gl = 0
-      kend_gl = kend
-      knode_gl = 0
-
-
-!JHAN: restart timestep loopp
-!@      ! time step loop over ktau
       DO ktau=kstart, kend 
          
          ! increment total timstep counter
@@ -199,42 +165,25 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
          ! needed for CASA-CNP
          nyear =INT((kend-kstart+1)/(365*ktauday))
    
-!@         canopy%oldcansto=canopy%cansto
-
-!JHAN: resets met data per ktau from the copies made previously 
-!JHAN: store in arrays with ktau element
-         call reset_DupVars( ktau, dup, met, bgc, soil,veg, ssnow, canopy, & 
-                        rad, rough, air ) 
-!JHAN: this is ssecond time this is called
-          ! Get met data and LAI, set time variables.
-!         ! Rainfall input may be augmented for spinup purposes:
-!!@          met%ofsd = met%fsd(:,1) + met%fsd(:,2) 
-!!@         CALL get_met_data( spinup, spinConv, met, soil,                    &
-!!@                            rad, veg, kend, dels, C%TFRZ, ktau ) 
-!!@
+         canopy%oldcansto=canopy%cansto
+   
+         ! Get met data and LAI, set time variables.
+         ! Rainfall input may be augmented for spinup purposes:
+          met%ofsd = met%fsd(:,1) + met%fsd(:,2)
+         CALL get_met_data( spinup, spinConv, met, soil,                    &
+                            rad, veg, kend, dels, C%TFRZ, ktau ) 
+   
          ! Feedback prognostic vcmax and daily LAI from casaCNP to CABLE
          IF (l_vcmaxFeedbk) CALL casa_feedback( ktau, veg, casabiome,    &
                                                 casapool, casamet )
    
          IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
-!JHAN: NEW CODE BLOCK ENDS HERE
-#endif 
-
+   
          ! CALL land surface scheme for this timestep, all grid points:
          CALL cbm( dels, air, bgc, canopy, met,                             &
                    bal, rad, rough, soil, ssnow,                            &
                    sum_flux, veg )
-         
-         !call Set_BufVars( ktau, buf, met, bgc, soil,veg, ssnow, canopy, &
-         !               rad, rough, air )
-
-         CALL CABLE_error_log( "cbm finished" )
-         
-
-         !call test_BufVars( ktau, buf, met, bgc, soil,veg, ssnow, canopy, &
-         !               rad, rough, air )
-
-
+   
          ssnow%smelt = ssnow%smelt*dels
          ssnow%rnof1 = ssnow%rnof1*dels
          ssnow%rnof2 = ssnow%rnof2*dels
@@ -267,14 +216,94 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
          ! dump bitwise reproducible testing data
          IF( cable_user%RUN_DIAG_LEVEL == 'zero') THEN
             IF((.NOT.spinup).OR.(spinup.AND.spinConv))                         &
-               call cable_diag( iDiag0, "FLUXES", mp, kend, ktau,              &
+               call cable_diag( 1, "FLUXES", mp, kend, ktau,                   &
                                 knode_gl, "FLUXES",                            &
                           canopy%fe + canopy%fh )
          ENDIF
-         
+                
       END DO ! END Do loop over timestep ktau
 
-     
+
+
+   
+      !jhan this is insufficient testing. condition for 
+      !spinup=.false. & we want CASA_dump.nc (spinConv=.true.)
+      ! see if spinup (if conducting one) has converged:
+      IF(spinup.AND..NOT.spinConv) THEN
+         
+         ! Write to screen and log file:
+         WRITE(*,'(A18,I3,A24)') ' Spinning up: run ',INT(ktau_tot/kend),      &
+               ' of data set complete...'
+         WRITE(logn,'(A18,I3,A24)') ' Spinning up: run ',INT(ktau_tot/kend),   &
+               ' of data set complete...'
+         
+         ! IF not 1st run through whole dataset:
+         IF( INT( ktau_tot/kend ) > 1 ) THEN 
+            
+            ! evaluate spinup
+            IF( ANY( ABS(ssnow%wb-soilMtemp)>delsoilM).OR.                     &
+                ANY(ABS(ssnow%tgg-soilTtemp)>delsoilT) ) THEN
+               
+               ! No complete convergence yet
+               maxdiff = MAXLOC(ABS(ssnow%wb-soilMtemp))
+               PRINT *, 'Example location of moisture non-convergence: ', &
+                        maxdiff
+               PRINT *, 'ssnow%wb : ', ssnow%wb(maxdiff(1),maxdiff(2))
+               PRINT *, 'soilMtemp: ', soilMtemp(maxdiff(1),maxdiff(2))
+               maxdiff = MAXLOC(ABS(ssnow%tgg-soilTtemp))
+               PRINT *, 'Example location of temperature non-convergence: ', &
+                        maxdiff
+               PRINT *, 'ssnow%tgg: ', ssnow%tgg(maxdiff(1),maxdiff(2))
+               PRINT *, 'soilTtemp: ', soilTtemp(maxdiff(1),maxdiff(2))
+            
+            ELSE ! spinup has converged
+               
+               spinConv = .TRUE.
+               ! Write to screen and log file:
+               WRITE(*,'(A33)') ' Spinup has converged - final run'
+               WRITE(logn,'(A52)')                                             &
+                          ' Spinup has converged - final run - writing all data'
+               WRITE(logn,'(A37,F8.5,A28)')                                    &
+                          ' Criteria: Change in soil moisture < ',             &
+                          delsoilM, ' in any layer over whole run'
+               WRITE(logn,'(A40,F8.5,A28)' )                                   &
+                          '           Change in soil temperature < ',          &
+                          delsoilT, ' in any layer over whole run'
+            END IF
+
+         ELSE ! allocate variables for storage
+         
+           ALLOCATE( soilMtemp(mp,ms), soilTtemp(mp,ms) )
+         
+         END IF
+         
+         ! store soil moisture and temperature
+         soilTtemp = ssnow%tgg
+         soilMtemp = REAL(ssnow%wb)
+
+      ELSE
+
+         ! if not spinning up, or spin up has converged, exit:
+         EXIT
+       
+      END IF
+
+   END DO
+
+   IF (icycle > 0) THEN
+      
+      CALL casa_poolout( ktau, veg, soil, casabiome,                           &
+                         casapool, casaflux, casamet, casabal, phen )
+
+      CALL casa_fluxout( nyear, veg, soil, casabal, casamet)
+  
+   END IF
+
+   ! Write restart file if requested:
+   IF(output%restart)                                                          &
+      CALL create_restart( logn, dels, ktau, soil, veg, ssnow,                 &
+                           canopy, rough, rad, bgc, bal )
+      
    ! Close met data input file:
    CALL close_met_file
  
@@ -283,38 +312,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
                            rad, rough, soil, ssnow,                            &
                            sum_flux, veg )
 
-  
-   ! Check this run against standard for quasi-bitwise reproducability
-   ! Check triggered by cable_user%consistency_check = .TRUE. in cable.nml
-   IF(cable_user%consistency_check) THEN 
-      
-      new_sumbal = SUM(bal%wbal_tot) + SUM(bal%ebal_tot)                       &
-                       + SUM(bal%ebal_tot_cncheck)
-         print *, "trunk_sumbal: ", trunk_sumbal
-         print *, "new_sumbal: ", new_sumbal
-         print *, ""
-  
-      IF( new_sumbal == trunk_sumbal) THEN
-
-         print *, ""
-         print *, &
-         "Internal check shows this version reproduces the trunk sumbal"
-      
-      ELSE
-
-         print *, ""
-         print *, &
-         "Internal check shows in this version new_sumbal != trunk sumbal"
-         print *, &
-         "Writing new_sumbal to the file:", TRIM(Fnew_sumbal)
-               
-         OPEN( 12, FILE = Fnew_sumbal )
-            WRITE( 12, * ) new_sumbal  ! written by previous trunk version
-         CLOSE(12)
-      
-      ENDIF   
-      
-   ENDIF
+   WRITE(logn,*) bal%wbal_tot, bal%ebal_tot, bal%ebal_tot_cncheck
 
    ! Close log file
    CLOSE(logn)
@@ -438,7 +436,7 @@ end subroutine astep_1
 
 !##############################################################################
 
-END subroutine cable_offline_driver
+END subroutine cable_orig_driver
 
 
 SUBROUTINE prepareFiles(ncciy)
@@ -482,7 +480,7 @@ SUBROUTINE renameFiles(logn,inFile,nn,ncciy,inName)
 END SUBROUTINE renameFiles
 
 
-end module cable_driver_module
+end module cable_driver1_module
 
 
 
