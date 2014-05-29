@@ -14,4 +14,13 @@ test_offline/src/.Rhistory
 
 *.txt
 
+build/new_sumbal
+
+.tmp
+
+*.txt
+
+*.history
+
+
 offline/cable
