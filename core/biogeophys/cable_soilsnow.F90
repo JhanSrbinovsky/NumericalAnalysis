@@ -79,14 +79,14 @@ CONTAINS
 !
 SUBROUTINE trimb (a, b, c, rhs, kmax)
 
-   INTEGER                  :: kmax ! no. of discrete layers    
+   INTEGER, INTENT(IN)                  :: kmax ! no. of discrete layers    
 
-   REAL(r_2), DIMENSION(:,:) ::                                    &
+   REAL(r_2), DIMENSION(:,:), INTENT(IN) ::                                    &
       a,    & ! coef "A" in finite diff eq
       b,    & ! coef "B" in finite diff eq
       c       ! coef "C" in finite diff eq
    
-   REAL(r_2), DIMENSION(:,:)  :: rhs ! right hand side of eq
+   REAL(r_2), DIMENSION(:,:), INTENT(INOUT)  :: rhs ! right hand side of eq
   
    REAL(r_2), DIMENSION(SIZE(a,1),SIZE(a,2)) ::                                &
       e, temp, g 
@@ -125,15 +125,15 @@ SUBROUTINE smoisturev (dels,ssnow,soil,veg)
    
    USE cable_common_module
    
-   REAL :: dels    ! time step size (s)
+   REAL, INTENT(IN) :: dels    ! time step size (s)
    
-   TYPE(soil_snow_type) ::                                &
+   TYPE(soil_snow_type),      INTENT(INOUT) ::                                &
       ssnow ! soil and snow variables
  
-   TYPE(soil_parameter_type) ::                                &
+   TYPE(soil_parameter_type), INTENT(INOUT) ::                                &
       soil  ! soil parameters
    
-   TYPE(veg_parameter_type)  :: veg
+   TYPE(veg_parameter_type), INTENT(IN)  :: veg
 
    ! nmeth selects the solution method
    ! Values as follows:
@@ -547,11 +547,11 @@ END SUBROUTINE smoisturev
 
 SUBROUTINE snowdensity (dels, ssnow, soil)
    
-   REAL :: dels   ! integration time step (s)
+   REAL, INTENT(IN) :: dels   ! integration time step (s)
 
-   TYPE(soil_snow_type) :: ssnow 
+   TYPE(soil_snow_type),      INTENT(INOUT) :: ssnow 
     
-   TYPE(soil_parameter_type) :: soil
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil
 
    INTEGER, DIMENSION(mp,3) :: ssnow_isflag_ssdn 
    REAL, DIMENSION(mp) :: ssnow_tgg_min1
@@ -649,12 +649,12 @@ SUBROUTINE snow_melting (dels, snowmlt, ssnow, soil )
 
    USE cable_common_module
    
-   REAL :: dels   ! integration time step (s)
+   REAL, INTENT(IN) :: dels   ! integration time step (s)
    
-   REAL, DIMENSION(mp) :: snowmlt ! snow melt   
+   REAL, DIMENSION(mp), INTENT(OUT) :: snowmlt ! snow melt   
    
-   TYPE(soil_parameter_type) :: soil
-   TYPE(soil_snow_type)   :: ssnow  ! soil+snow variables
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil
+   TYPE(soil_snow_type), INTENT(INOUT)   :: ssnow  ! soil+snow variables
   
    INTEGER                 :: k,j 
    
@@ -763,12 +763,12 @@ SUBROUTINE snow_accum ( dels,  canopy, met, ssnow, soil )
 
 USE cable_common_module
 
-   REAL :: dels ! integration time step (s)
+   REAL, INTENT(IN) :: dels ! integration time step (s)
    
-   TYPE(canopy_type)         :: canopy ! vegetation variables
-   TYPE(met_type)            :: met   ! all met forcing
-   TYPE(soil_snow_type)      :: ssnow ! soil+snow variables
-   TYPE(soil_parameter_type) :: soil ! soil parameters
+   TYPE(canopy_type), INTENT(INOUT)         :: canopy ! vegetation variables
+   TYPE(met_type), INTENT(INOUT)            :: met   ! all met forcing
+   TYPE(soil_snow_type), INTENT(INOUT)      :: ssnow ! soil+snow variables
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil ! soil parameters
    
    REAL, DIMENSION(mp) ::                                                      &
       osm,     & !
@@ -928,15 +928,15 @@ SUBROUTINE surfbv (dels, met, ssnow, soil, veg, canopy )
 
    USE cable_common_module
 
-   REAL :: dels ! integration time step (s)
+   REAL, INTENT(IN) :: dels ! integration time step (s)
    
-   TYPE(canopy_type)       :: canopy
+   TYPE(canopy_type), INTENT(IN)       :: canopy
    
-   TYPE(met_type) :: met    ! all met forcing
-   TYPE(soil_snow_type) :: ssnow  ! soil+snow variables
+   TYPE(met_type),       INTENT(INOUT) :: met    ! all met forcing
+   TYPE(soil_snow_type), INTENT(INOUT) :: ssnow  ! soil+snow variables
    
-   TYPE(veg_parameter_type)     :: veg
-   TYPE(soil_parameter_type)  :: soil  ! soil parameters
+   TYPE(veg_parameter_type),  INTENT(IN)     :: veg
+   TYPE(soil_parameter_type), INTENT(INOUT)  :: soil  ! soil parameters
 
 !jhan:cable.nml
    INTEGER, PARAMETER      :: nglacier = 2 ! 0 original, 1 off, 2 new Eva
@@ -1061,12 +1061,12 @@ END SUBROUTINE surfbv
 ! ga - heat flux from the atmosphere (ground heat flux)
 ! ccnsw - soil thermal conductivity, including water/ice
 SUBROUTINE stempv(dels, canopy, ssnow, soil)
-   REAL :: dels ! integration time step (s)
+   REAL, INTENT(IN) :: dels ! integration time step (s)
    
-   TYPE(canopy_type) :: canopy
-   TYPE(soil_snow_type) :: ssnow
+   TYPE(canopy_type),    INTENT(INOUT) :: canopy
+   TYPE(soil_snow_type), INTENT(INOUT) :: ssnow
    
-   TYPE(soil_parameter_type) :: soil
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil
    
    REAL, DIMENSION(mp) ::                                                      &
       coefa, coefb,  & !
@@ -1299,12 +1299,12 @@ SUBROUTINE snowcheck(dels, ssnow, soil, met )
    
    USE cable_common_module
    
-   REAL :: dels ! integration time step (s)
+   REAL, INTENT(IN) :: dels ! integration time step (s)
    
-   TYPE(soil_snow_type) :: ssnow
-   TYPE(met_type) :: met ! all met forcing
+   TYPE(soil_snow_type), INTENT(INOUT) :: ssnow
+   TYPE(met_type),       INTENT(INOUT) :: met ! all met forcing
    
-   TYPE(soil_parameter_type) :: soil  ! soil parameters
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil  ! soil parameters
    
    INTEGER :: k,j
    
@@ -1404,10 +1404,10 @@ END SUBROUTINE snowcheck
 
 SUBROUTINE snowl_adjust(dels, ssnow, canopy )
    
-   REAL :: dels ! integration time step (s)
+   REAL, INTENT(IN) :: dels ! integration time step (s)
    
-   TYPE(soil_snow_type) :: ssnow
-   TYPE(canopy_type)    :: canopy
+   TYPE(soil_snow_type), INTENT(INOUT) :: ssnow
+   TYPE(canopy_type), INTENT(INOUT)    :: canopy
   
    INTEGER :: k
    
@@ -1554,9 +1554,9 @@ END SUBROUTINE snowl_adjust
 
 SUBROUTINE soilfreeze(dels, soil, ssnow)
    USE cable_common_module
-   REAL                    :: dels ! integration time step (s)
-   TYPE(soil_snow_type)      :: ssnow
-   TYPE(soil_parameter_type) :: soil
+   REAL, INTENT(IN)                    :: dels ! integration time step (s)
+   TYPE(soil_snow_type), INTENT(INOUT)      :: ssnow
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil
    REAL(r_2), DIMENSION(mp)           :: sicefreeze
    REAL(r_2), DIMENSION(mp)           :: sicemelt
    REAL, DIMENSION(mp)           :: xx
@@ -1618,11 +1618,11 @@ SUBROUTINE remove_trans(dels, soil, ssnow, canopy, veg)
    USE cable_common_module, ONLY : redistrb
 
    ! Removes transpiration water from soil.
-   REAL                    :: dels ! integration time step (s)
-   TYPE(canopy_type)         :: canopy
-   TYPE(soil_snow_type)      :: ssnow
-   TYPE(soil_parameter_type) :: soil
-   TYPE(veg_parameter_type)  :: veg
+   REAL, INTENT(IN)                    :: dels ! integration time step (s)
+   TYPE(canopy_type), INTENT(INOUT)         :: canopy
+   TYPE(soil_snow_type), INTENT(INOUT)      :: ssnow
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil
+   TYPE(veg_parameter_type), INTENT(INOUT)  :: veg
    REAL(r_2), DIMENSION(mp,0:ms) :: diff 
    REAL(r_2), DIMENSION(mp)      :: xx,xxd,evap_cur
    INTEGER k
@@ -1672,13 +1672,13 @@ END SUBROUTINE remove_trans
 !	 ssnow
 SUBROUTINE soil_snow(dels, soil, ssnow, canopy, met, bal, veg)
    USE cable_common_module
-   REAL                    :: dels ! integration time step (s)
-   TYPE(soil_parameter_type) :: soil
-   TYPE(soil_snow_type)      :: ssnow
-   TYPE(canopy_type)         :: canopy
-   TYPE(veg_parameter_type)  :: veg
-   TYPE(met_type)            :: met ! all met forcing
-   TYPE (balances_type)      :: bal
+   REAL, INTENT(IN)                    :: dels ! integration time step (s)
+   TYPE(soil_parameter_type), INTENT(INOUT) :: soil
+   TYPE(soil_snow_type), INTENT(INOUT)      :: ssnow
+   TYPE(canopy_type), INTENT(INOUT)         :: canopy
+   TYPE(veg_parameter_type), INTENT(INOUT)  :: veg
+   TYPE(met_type), INTENT(INOUT)            :: met ! all met forcing
+   TYPE (balances_type), INTENT(INOUT)      :: bal
    INTEGER             :: k
    REAL, DIMENSION(mp) :: snowmlt
    REAL, DIMENSION(mp) :: totwet
@@ -1883,14 +1883,14 @@ SUBROUTINE hydraulic_redistribution(dels, soil, ssnow, canopy, veg, met)
 
    USE cable_common_module, ONLY : wiltParam, satuParam
    
-   REAL :: dels ! integration time step (s)
+   REAL, INTENT(IN) :: dels ! integration time step (s)
    
-   TYPE(soil_parameter_type) :: soil
-   TYPE(canopy_type) :: canopy
-   TYPE(veg_parameter_type) :: veg
+   TYPE(soil_parameter_type), INTENT(IN) :: soil
+   TYPE(canopy_type),         INTENT(IN) :: canopy
+   TYPE(veg_parameter_type),  INTENT(IN) :: veg
    
-   TYPE(soil_snow_type) :: ssnow
-   TYPE(met_type) :: met 
+   TYPE(soil_snow_type),   INTENT(INOUT) :: ssnow
+   TYPE(met_type),         INTENT(INOUT) :: met 
    
    REAL, PARAMETER ::                                                         &
       thetas=0.45,         & ! from Belk et al., 2007, WRR

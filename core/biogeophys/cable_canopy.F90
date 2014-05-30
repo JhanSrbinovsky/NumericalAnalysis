@@ -54,18 +54,18 @@ SUBROUTINE define_canopy(bal,rad,rough,air,met,dels,ssnow,soil,veg, canopy)
    USE cable_common_module   
    USE cable_roughness_module
 
-   TYPE (balances_type)  :: bal
-   TYPE (radiation_type) :: rad
-   TYPE (roughness_type) :: rough
-   TYPE (air_type)       :: air
-   TYPE (met_type)       :: met
-   TYPE (soil_snow_type) :: ssnow
-   TYPE (canopy_type)    :: canopy
+   TYPE (balances_type), INTENT(INOUT)  :: bal
+   TYPE (radiation_type), INTENT(INOUT) :: rad
+   TYPE (roughness_type), INTENT(INOUT) :: rough
+   TYPE (air_type), INTENT(INOUT)       :: air
+   TYPE (met_type), INTENT(INOUT)       :: met
+   TYPE (soil_snow_type), INTENT(INOUT) :: ssnow
+   TYPE (canopy_type), INTENT(INOUT)    :: canopy
 
-   TYPE (soil_parameter_type)   :: soil
-   TYPE (veg_parameter_type)    :: veg
+   TYPE (soil_parameter_type), INTENT(INOUT)   :: soil
+   TYPE (veg_parameter_type), INTENT(INOUT)    :: veg
    
-   REAL               :: dels ! integration time setp (s)
+   REAL, INTENT(IN)               :: dels ! integration time setp (s)
    
    INTEGER  ::                                                                 &
       iter,  & ! iteration #
@@ -621,7 +621,7 @@ END SUBROUTINE comp_friction_vel
 
 FUNCTION Penman_Monteith( ground_H_flux ) RESULT(ssnowpotev)
    USE cable_def_types_mod, only : mp
-   REAL, DIMENSION(mp)  :: ground_H_flux
+   REAL, INTENT(IN), DIMENSION(mp)  :: ground_H_flux
    REAL, DIMENSION(MP)  ::                                                     &
       ssnowpotev,      & ! returned result of function    
       sss,             & ! var for Penman-Monteith soil evap
@@ -734,7 +734,7 @@ SUBROUTINE within_canopy( gbhu, gbhf )
 
    USE cable_def_types_mod, only : mp, r_2
 
-   REAL(r_2), DIMENSION(:,:) ::                                    &
+   REAL(r_2), INTENT(IN), DIMENSION(:,:) ::                                    &
       gbhu,    &  ! forcedConvectionBndryLayerCond
       gbhf        ! freeConvectionBndryLayerCond
       
@@ -873,11 +873,11 @@ FUNCTION qsatf(j,tair,pmb) RESULT(r)
   ! AT TEMP tair (DEG C) AND PRESSURE pmb (MB), GET SATURATION SPECIFIC
   ! HUMIDITY (KG/KG) FROM TETEN FORMULA
    
-   REAL ::                                                         &
+   REAL, INTENT(IN) ::                                                         &
       tair,         & ! air temperature (C)
       pmb             ! pressure PMB (mb)
   
-   INTEGER :: j 
+   INTEGER, INTENT(IN) :: j 
   
    REAL           :: r    ! result; sat sp humidity
   
@@ -888,11 +888,11 @@ END FUNCTION qsatf
 
 SUBROUTINE qsatfjh(var,tair,pmb) 
    USE cable_def_types_mod, only : mp
-   REAL, DIMENSION(mp) ::                                          &
+   REAL, INTENT(IN), DIMENSION(mp) ::                                          &
       tair,                        & ! air temperature (C)
       pmb                            ! pressure PMB (mb)
   
-   REAL, DIMENSION(mp) ::                                         &
+   REAL, INTENT(OUT), DIMENSION(mp) ::                                         &
       var                            ! result; sat sp humidity
   
   INTEGER :: j
@@ -909,11 +909,11 @@ END SUBROUTINE qsatfjh
 
 SUBROUTINE qsatfjh2(var,tair,pmb) 
    
-   REAL ::                                                         &
+   REAL, INTENT(IN) ::                                                         &
       tair,         & ! air temperature (C)
       pmb             ! pressure PMB (mb)
    
-   REAL ::                                                        &
+   REAL, INTENT(OUT) ::                                                        &
       var             ! result; sat sp humidity
       
       var = (C%RMH2o/C%rmair) * (C%TETENA*EXP(C%TETENB*tair/(C%TETENC+tair))) / pmb
@@ -930,7 +930,7 @@ FUNCTION psim(zeta) RESULT(r)
    ! and the Beljaars and Holtslag (1991) form for stable cases.
    
    
-   REAL, DIMENSION(mp) ::  zeta       !
+   REAL, INTENT(IN), DIMENSION(mp) ::  zeta       !
 
    ! function result   
    REAL, DIMENSION(mp) :: r
@@ -969,7 +969,7 @@ ELEMENTAL FUNCTION psis(zeta) RESULT(r)
    ! for scalars, using the businger-dyer form for unstable cases
    ! and the webb form for stable cases. see paulson (1970).
 
-   REAL, intent(in)     :: zeta
+   REAL, INTENT(IN)     :: zeta
    
    REAL, PARAMETER      ::                                                     &
       gu = 16.0,        & !
@@ -1007,7 +1007,7 @@ FUNCTION psis1(zeta) RESULT(r)
    ! computes integrated stability function psis(z/l) (z/l=zeta)
    ! for scalars, using the businger-dyer form for unstable cases
    ! and the webb form for stable cases. see paulson (1970).
-   REAL     :: zeta
+   REAL, INTENT(IN)     :: zeta
    
    REAL, PARAMETER      :: gu = 16.0
    REAL, PARAMETER      :: gs = 5.0
@@ -1042,7 +1042,9 @@ END FUNCTION psis1
 ! -----------------------------------------------------------------------------
 
 ELEMENTAL FUNCTION rplant(rpconst, rpcoef, tair) result(z)
-   REAL, intent(in) :: rpconst, rpcoef, tair
+   REAL, INTENT(IN)     :: rpconst
+   REAL, INTENT(IN)     :: rpcoef
+   REAL, INTENT(IN)     :: tair
    REAL                 :: z
    z = rpconst * exp(rpcoef * tair)
 END FUNCTION rplant
@@ -1054,27 +1056,27 @@ SUBROUTINE wetLeaf( dels, rad, rough, air, met, veg, canopy, cansat, tlfy,     &
 
    USE cable_def_types_mod
 
-   TYPE (radiation_type) :: rad
-   TYPE (roughness_type) :: rough
-   TYPE (air_type):: air
-   TYPE (met_type):: met
-   TYPE (canopy_type):: canopy
+   TYPE (radiation_type), INTENT(INOUT) :: rad
+   TYPE (roughness_type), INTENT(INOUT) :: rough
+   TYPE (air_type),       INTENT(INOUT) :: air
+   TYPE (met_type),       INTENT(INOUT) :: met
+   TYPE (canopy_type),    INTENT(INOUT) :: canopy
 
-   TYPE (veg_parameter_type)    :: veg
+   TYPE (veg_parameter_type), INTENT(INOUT)    :: veg
 
-   REAL, DIMENSION(:) ::                                            &
+   REAL,INTENT(IN), DIMENSION(:) ::                                            &
       tlfy,          & ! leaf temp (K) - assC%UMINg the temperature of 
                        ! wet leaf is equal that of dry leaf ="tlfy"
       cansat           ! max canopy intercept. (mm)
 
-   REAL(r_2), DIMENSION(:,:) ::                                    &
+   REAL(r_2), INTENT(IN), DIMENSION(:,:) ::                                    &
       gbhu,          & ! forcedConvectionBndryLayerCond
       gbhf             ! freeConvectionBndryLayerCond
 
-   REAL(r_2), DIMENSION(:) ::                                     &
+   REAL(r_2), INTENT(OUT), DIMENSION(:) ::                                     &
       ghwet            ! cond for heat for a wet canopy
 
-   REAL     :: dels ! integration time step (s)
+   REAL, INTENT(IN)     :: dels ! integration time step (s)
 
    ! local variables  
    REAL, DIMENSION(mp) ::                                                      &
@@ -1153,15 +1155,15 @@ SUBROUTINE Surf_wetness_fact( cansat, canopy, ssnow,veg, met, soil, dels )
    USE cable_common_module
    USE cable_def_types_mod
 
-   TYPE (veg_parameter_type)    :: veg
-   TYPE (soil_snow_type):: ssnow
-   TYPE (soil_parameter_type)   :: soil
-   TYPE (canopy_type)   :: canopy
-   TYPE (met_type)   :: met
+   TYPE (veg_parameter_type), INTENT(INOUT)    :: veg
+   TYPE (soil_snow_type), intent(inout):: ssnow
+   TYPE (soil_parameter_type), intent(inout)   :: soil
+   TYPE (canopy_type), INTENT(INOUT)   :: canopy
+   TYPE (met_type), INTENT(INOUT)   :: met
    
-   REAL :: dels ! integration time setp (s)
+   REAL, INTENT(IN) :: dels ! integration time setp (s)
 
-   REAL, DIMENSION(:) :: cansat ! max canopy intercept. (mm)
+   REAL,INTENT(IN), DIMENSION(:) :: cansat ! max canopy intercept. (mm)
 
    !local variables
    REAL, DIMENSION(mp)  :: lower_limit, upper_limit,ftemp
@@ -1229,40 +1231,40 @@ SUBROUTINE dryLeaf( dels, rad, rough, air, met,                                &
    USE cable_def_types_mod
    USE cable_common_module
 
-   TYPE (radiation_type) :: rad
-   TYPE (roughness_type) :: rough
-   TYPE (air_type) :: air
-   TYPE (met_type) :: met
-   TYPE (canopy_type) :: canopy
-   TYPE (soil_snow_type) :: ssnow
+   TYPE (radiation_type), INTENT(INOUT) :: rad
+   TYPE (roughness_type), INTENT(INOUT) :: rough
+   TYPE (air_type),       INTENT(INOUT) :: air
+   TYPE (met_type),       INTENT(INOUT) :: met
+   TYPE (canopy_type),    INTENT(INOUT) :: canopy
+   TYPE (soil_snow_type), INTENT(INOUT) :: ssnow
 
-   TYPE (veg_parameter_type)   :: veg
-   TYPE (soil_parameter_type)   :: soil
+   TYPE (veg_parameter_type),  INTENT(INOUT)   :: veg
+   TYPE (soil_parameter_type), INTENT(inout)   :: soil
    
-   REAL, DIMENSION(:) ::                                        &
+   REAL, INTENT(INOUT), DIMENSION(:) ::                                        &
       dsx,        & ! leaf surface vpd
       fwsoil,     & ! soil water modifier of stom. cond
       tlfx,       & ! leaf temp prev. iter (K)
       tlfy          ! leaf temp (K)
    
-   REAL(R_2), DIMENSION(:) ::                                    &
+   REAL(R_2),INTENT(INOUT), DIMENSION(:) ::                                    &
       ecy,        & ! lat heat fl dry big leaf
       hcy,        & ! veg. sens heat
       rny         !& !
 
-   REAL(R_2), DIMENSION(:,:) ::                                  &
+   REAL(R_2),INTENT(INOUT), DIMENSION(:,:) ::                                  &
       gbhu,       & ! forcedConvectionBndryLayerCond
       gbhf,       & ! freeConvectionBndryLayerCond
       csx           ! leaf surface CO2 concentration
 
-   REAL, DIMENSION(:) :: cansat
+   REAL,INTENT(IN), DIMENSION(:) :: cansat
 
-   REAL(r_2), DIMENSION(:) ::                                     &
+   REAL(r_2), INTENT(OUT), DIMENSION(:) ::                                     &
       ghwet  ! cond for heat for a wet canopy
 
-   INTEGER :: iter
+   INTEGER,INTENT(IN) :: iter
  
-   REAL     :: dels ! integration time step (s)
+   REAL, INTENT(IN)     :: dels ! integration time step (s)
    
    !local variables
    REAL, PARAMETER  ::                                                         &
@@ -1708,9 +1710,9 @@ SUBROUTINE photosynthesis( csxz, cx1z, cx2z, gswminz,                          &
                            vx4z, xleuningz, vlaiz, deltlfz, anxz, fwsoilz )
    USE cable_def_types_mod, only : mp, mf, r_2
    
-   REAL(r_2), DIMENSION(mp,mf) :: csxz
+   REAL(r_2), DIMENSION(mp,mf), INTENT(IN) :: csxz
    
-   REAL, DIMENSION(mp,mf) ::                                       &
+   REAL, DIMENSION(mp,mf), INTENT(IN) ::                                       &
       cx1z,       & !
       cx2z,       & !     
       gswminz,    & !
@@ -1723,7 +1725,7 @@ SUBROUTINE photosynthesis( csxz, cx1z, cx2z, gswminz,                          &
       vlaiz,      & !
       deltlfz       ! 
 
-   REAL, DIMENSION(mp,mf) :: anxz
+   REAL, DIMENSION(mp,mf), INTENT(INOUT) :: anxz
    
    ! local variables
    REAL(r_2), DIMENSION(mp,mf) ::                                              &
@@ -1920,8 +1922,8 @@ END SUBROUTINE photosynthesis
 
 FUNCTION ej3x(parx,x) RESULT(z)
    
-   REAL     :: parx
-   REAL     :: x
+   REAL, INTENT(IN)     :: parx
+   REAL, INTENT(IN)     :: x
    REAL                 :: z
    
    z = MAX(0.0,                                                                &
@@ -1934,8 +1936,8 @@ END FUNCTION ej3x
 
 FUNCTION ej4x(parx,x) RESULT(z)
    
-   REAL     :: parx
-   REAL     :: x
+   REAL, INTENT(IN)     :: parx
+   REAL, INTENT(IN)     :: x
    REAL                 :: z
  
    z = MAX(0.0,                                                                &
@@ -1950,7 +1952,7 @@ END FUNCTION ej4x
 FUNCTION xvcmxt4(x) RESULT(z)
    
    REAL, PARAMETER      :: q10c4 = 2.0
-   REAL :: x
+   REAL, INTENT(IN) :: x
    REAL :: z
  
    z = q10c4 ** (0.1 * x - 2.5) /                                              &
@@ -1964,7 +1966,7 @@ FUNCTION xvcmxt3(x) RESULT(z)
    
    !  leuning 2002 (p c & e) equation for temperature response
    !  used for vcmax for c3 plants
-   REAL :: x
+   REAL, INTENT(IN) :: x
    REAL :: xvcnum,xvcden,z
  
    REAL, PARAMETER  :: EHaVc  = 73637.0  ! J/mol (Leuning 2002)
@@ -1986,7 +1988,7 @@ FUNCTION xejmxt3(x) RESULT(z)
    !  leuning 2002 (p c & e) equation for temperature response
    !  used for jmax for c3 plants
  
-   REAL :: x
+   REAL, INTENT(IN) :: x
    REAL :: xjxnum,xjxden,z   
  
    REAL, PARAMETER  :: EHaJx  = 50300.0  ! J/mol (Leuning 2002)
@@ -2004,10 +2006,10 @@ END FUNCTION xejmxt3
 
 SUBROUTINE fwsoil_calc_std(fwsoil, soil, ssnow, veg) 
    USE cable_def_types_mod
-   TYPE (soil_snow_type):: ssnow
-   TYPE (soil_parameter_type)   :: soil
-   TYPE (veg_parameter_type)    :: veg
-   REAL, DIMENSION(:):: fwsoil ! soil water modifier of stom. cond
+   TYPE (soil_snow_type), INTENT(INOUT):: ssnow
+   TYPE (soil_parameter_type), INTENT(INOUT)   :: soil
+   TYPE (veg_parameter_type), INTENT(INOUT)    :: veg
+   REAL, INTENT(OUT), DIMENSION(:):: fwsoil ! soil water modifier of stom. cond
    REAL, DIMENSION(mp) :: rwater ! soil water availability
 
    rwater = MAX(1.0e-9,                                                    &
@@ -2022,10 +2024,10 @@ END SUBROUTINE fwsoil_calc_std
 
 SUBROUTINE fwsoil_calc_non_linear(fwsoil, soil, ssnow, veg) 
    USE cable_def_types_mod
-   TYPE (soil_snow_type):: ssnow
-   TYPE (soil_parameter_type)   :: soil
-   TYPE (veg_parameter_type)    :: veg
-   REAL, DIMENSION(:):: fwsoil ! soil water modifier of stom. cond
+   TYPE (soil_snow_type), INTENT(INOUT):: ssnow
+   TYPE (soil_parameter_type), INTENT(INOUT)   :: soil
+   TYPE (veg_parameter_type), INTENT(INOUT)    :: veg
+   REAL, INTENT(OUT), DIMENSION(:):: fwsoil ! soil water modifier of stom. cond
    REAL, DIMENSION(mp) :: rwater ! soil water availability
    REAL, DIMENSION(mp,3)          :: xi, ti, si
    INTEGER :: j
@@ -2069,10 +2071,10 @@ END SUBROUTINE fwsoil_calc_non_linear
 ! ypw 19/may/2010 soil water uptake efficiency (see Lai and Ktaul 2000)
 SUBROUTINE fwsoil_calc_Lai_Ktaul(fwsoil, soil, ssnow, veg) 
    USE cable_def_types_mod
-   TYPE (soil_snow_type):: ssnow
-   TYPE (soil_parameter_type)   :: soil
-   TYPE (veg_parameter_type)    :: veg
-   REAL, DIMENSION(:):: fwsoil ! soil water modifier of stom. cond
+   TYPE (soil_snow_type), INTENT(INOUT):: ssnow
+   TYPE (soil_parameter_type), INTENT(INOUT)   :: soil
+   TYPE (veg_parameter_type), INTENT(INOUT)    :: veg
+   REAL, INTENT(OUT), DIMENSION(:):: fwsoil ! soil water modifier of stom. cond
    INTEGER   :: ns
    REAL, parameter ::rootgamma = 0.01   ! (19may2010)
    REAL, DIMENSION(mp)  :: dummy, normFac

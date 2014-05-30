@@ -175,7 +175,7 @@ MODULE cable_common_module
       
    END TYPE vegin_type
 
-   CHARACTER(LEN=70), DIMENSION(:), POINTER, save ::                                 &
+   CHARACTER(LEN=70), DIMENSION(:), POINTER ::                                 &
       veg_desc,   & ! decriptions of veg type
       soil_desc     ! decriptns of soil type 
 
@@ -190,7 +190,6 @@ MODULE cable_common_module
       
 CONTAINS
 
-!==============================================================================
 
 SUBROUTINE get_type_parameters(logn,vegparmnew, classification)
 
@@ -198,11 +197,11 @@ SUBROUTINE get_type_parameters(logn,vegparmnew, classification)
    
    USE cable_def_types_mod, ONLY : mvtype, ms, ncs, ncp, mstype, nrb 
 
-   INTEGER :: logn     ! log file unit number
+   INTEGER,INTENT(IN) :: logn     ! log file unit number
    
-   CHARACTER(LEN=4), OPTIONAL :: classification
+   CHARACTER(LEN=4), INTENT(INOUT), OPTIONAL :: classification
    
-   LOGICAL      :: vegparmnew ! new format input file 
+   LOGICAL,INTENT(IN)      :: vegparmnew ! new format input file 
    
    CHARACTER(LEN=80) :: comments 
    CHARACTER(LEN=10) :: vegtypetmp                   
@@ -399,7 +398,7 @@ END SUBROUTINE get_type_parameters
 
 ! get svn revision number and status
 SUBROUTINE report_version_no( logn )
-   INTEGER :: logn
+   INTEGER, INTENT(IN) :: logn
    ! set from environment variable $HOME
    CHARACTER(LEN=200) ::                                                       & 
       myhome,       & ! $HOME (POSIX) environment/shell variable
@@ -450,17 +449,7 @@ SUBROUTINE report_version_no( logn )
 
 END SUBROUTINE report_version_no
 
-!==============================================================================
 
-subroutine CABLE_error_log(message)
-   character(len=*) :: message   
-   
-   if( cable_user%RUN_DIAG_LEVEL == "prog" ) & 
-      print *, "CABLE_log: ", message
-    
-end subroutine CABLE_error_log
-
-!==============================================================================
 
 END MODULE cable_common_module
 
