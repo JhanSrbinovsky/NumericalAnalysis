@@ -101,10 +101,18 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
                                   casa_met, casa_balance
    USE phenvariable,        ONLY: phen_variable
 
+   use cable_DUPlicate_types_mod, only :                                       &
+      alloc_DupVars, set_Dupvars, Reset_Dupvars
+   use cable_DUPlicate_types_mod, only : TDupVars
+
+   
+   !use cable_buffer_types_mod, only : alloc_BufVars, set_Bufvars, test_Bufvars
+   use cable_Buffer_types_mod, only : TBufVars
+
+   IMPLICIT NONE
+   
    type (TdupVars) :: dup 
    type (TbufVars) :: buf 
-   
-   IMPLICIT NONE
    
    ! CABLE namelist: model configuration, runtime/user switches 
    CHARACTER(LEN=200), PARAMETER :: CABLE_NAMELIST='cable.nml' 
