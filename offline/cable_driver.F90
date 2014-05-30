@@ -101,6 +101,9 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
                                   casa_met, casa_balance
    USE phenvariable,        ONLY: phen_variable
 
+   type (TdupVars) :: dup 
+   type (TbufVars) :: buf 
+   
    IMPLICIT NONE
    
    ! CABLE namelist: model configuration, runtime/user switches 
