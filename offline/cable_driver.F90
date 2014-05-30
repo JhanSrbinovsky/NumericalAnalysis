@@ -65,8 +65,19 @@
 !              restart_out.nc
 !              poolcnpOut.csv -- from CASA-CNP
 !==============================================================================
+module cable_driver_module
+   
+   implicit none
+   
 
-PROGRAM cable_offline_driver
+contains
+
+subroutine cable_offline_driver( met, air, canopy, rad, rough, &
+                                 ssnow, soil, veg, bal,        &
+                                 sum_flux, bgc, &
+                                 casabiome, casapool, casaflux, &
+                                 casamet, casabal, phen, dup, buf ) 
+ 
    USE cable_def_types_mod
    USE cable_IO_vars_module, ONLY: logn,gswpfile,ncciy,leaps,                  &
                                    verbose, fixedCO2,output,check,patchout,    &
@@ -490,7 +501,7 @@ PROGRAM cable_offline_driver
    ! Close log file
    CLOSE(logn)
 
-END PROGRAM cable_offline_driver
+end subroutine cable_offline_driver
 
 
 SUBROUTINE prepareFiles(ncciy)
@@ -534,6 +545,7 @@ SUBROUTINE renameFiles(logn,inFile,nn,ncciy,inName)
 END SUBROUTINE renameFiles
 
 
+end module cable_driver_module
 
 
 
