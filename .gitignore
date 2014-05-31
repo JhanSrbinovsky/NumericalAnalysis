@@ -4,6 +4,10 @@ offline/.tmp/
 
 *.o
 
+.tmp/
+
+*.txt
+
 *.mod
 
 test_offline/src/.Rhistory
@@ -11,8 +15,6 @@ test_offline/src/.Rhistory
 *.history
 
 *.nc
-
-*.txt
 
 build/new_sumbal
 
@@ -22,5 +24,14 @@ build/new_sumbal
 
 *.history
 
+offline/.tmp/
+
+*.o
+
+*.mod
+
+test_offline/src/.Rhistory
+
+*.history
 
 offline/cable
