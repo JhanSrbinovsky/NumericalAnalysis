@@ -27,7 +27,8 @@ host_shin()
    export NCDIR='/usr/local/intel/lib'
    export NCMOD='/usr/local/intel/include'
    export FC=ifort
-   export CFLAGS='-O0 -g --traceback -fp-model precise -ftz -fpe0'
+   #export CFLAGS='-O0 -g --traceback -fp-model precise -ftz -fpe0'
+   export CFLAGS='-O2 -fp-model precise'
    export LD='-lnetcdf'
    export LDFLAGS='-L/usr/local/intel/lib -O2'
    build_build

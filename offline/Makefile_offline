@@ -27,12 +27,12 @@
 # ==============================================================================
 ##########################################################################
 # jiggle - for netbeans               
-NCDIR=/usr/local/lib
-NCMOD=/usr/local/include
-FC=/usr/local/bin/gfortran
-CFLAGS=-O0 -x f95-cpp-input -ffree-form -ffree-line-length-0
-LD=-lnetcdf -lnetcdff
-LDFLAGS=-L/usr/local/lib -O2
+#NCDIR=/usr/local/lib
+#NCMOD=/usr/local/include
+#FC=/usr/local/bin/gfortran
+#CFLAGS=-O0 -x f95-cpp-input -ffree-form -ffree-line-length-0
+#LD=-lnetcdf -lnetcdff
+#LDFLAGS=-L/usr/local/lib -O2
 
 # these are all the files we are compiling
 LSRC = cable_data.F90 cable_diag.F90 cable_common.F90 cable_define_types.F90   \
