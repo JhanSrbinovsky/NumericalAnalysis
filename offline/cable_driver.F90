@@ -132,7 +132,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
 
    ! END header
 
-CALL headerstep()
+   CALL headerstep()
 
    ssnow%otss_0 = ssnow%tgg(:,1)
    ssnow%otss = ssnow%tgg(:,1)
@@ -142,7 +142,8 @@ CALL headerstep()
    
    ! outer loop - spinup loop no. ktau_tot :
    ktau_tot = 0 
-!   DO
+   
+   !DO
 
       ! globally (WRT code) accessible kend through USE cable_common_module
       ktau_gl = 0
@@ -157,28 +158,11 @@ CALL headerstep()
          
          ! globally (WRT code) accessible kend through USE cable_common_module
          ktau_gl = ktau_gl + 1
-         
-         ! somethings (e.g. CASA-CNP) only need to be done once per day  
-         ktauday=int(24.0*3600.0/dels)
-         idoy = mod(ktau/ktauday,365)
-         IF(idoy==0) idoy=365
-         
-         ! needed for CASA-CNP
-         nyear =INT((kend-kstart+1)/(365*ktauday))
-   
-         canopy%oldcansto=canopy%cansto
-   
-         ! Get met data and LAI, set time variables.
-         ! Rainfall input may be augmented for spinup purposes:
-          met%ofsd = met%fsd(:,1) + met%fsd(:,2)
+
+         call astep_header()         
+
          CALL get_met_data( spinup, spinConv, met, soil,                    &
                             rad, veg, kend, dels, C%TFRZ, ktau ) 
-   
-         ! Feedback prognostic vcmax and daily LAI from casaCNP to CABLE
-         IF (l_vcmaxFeedbk) CALL casa_feedback( ktau, veg, casabiome,    &
-                                                casapool, casamet )
-   
-         IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
    
          ! CALL land surface scheme for this timestep, all grid points:
          CALL cbm( dels, air, bgc, canopy, met,                             &
@@ -190,56 +174,22 @@ CALL headerstep()
          ssnow%rnof2 = ssnow%rnof2*dels
          ssnow%runoff = ssnow%runoff*dels
    
-   
-         !jhan this is insufficient testing. condition for 
-         !spinup=.false. & we want CASA_dump.nc (spinConv=.true.)
-         IF(icycle >0) THEN
-            call bgcdriver( ktau, kstart, kend, dels, met,                     &
-                            ssnow, canopy, veg, soil, casabiome,               &
-                            casapool, casaflux, casamet, casabal,              &
-                            phen, spinConv, spinup, ktauday, idoy,             &
-                            .FALSE., .FALSE. )
-         ENDIF 
-   
-         ! sumcflux is pulled out of subroutine cbm
-         ! so that casaCNP can be called before adding the fluxes (Feb 2008, YP)
-         CALL sumcflux( ktau, kstart, kend, dels, bgc,                         &
-                        canopy, soil, ssnow, sum_flux, veg,                    &
-                        met, casaflux, l_vcmaxFeedbk )
-   
-         ! Write time step's output to file if either: we're not spinning up 
-         ! or we're spinning up and the spinup has converged:
-         IF((.NOT.spinup).OR.(spinup.AND.spinConv))                            &
-            CALL write_output( dels, ktau, met, canopy, ssnow,                 &
-                               rad, bal, air, soil, veg, C%SBOLTZ,             &
-                               C%EMLEAF, C%EMSOIL )
-   
-         ! dump bitwise reproducible testing data
-         IF( cable_user%RUN_DIAG_LEVEL == 'zero') THEN
-            IF((.NOT.spinup).OR.(spinup.AND.spinConv))                         &
-               call cable_diag( 1, "FLUXES", mp, kend, ktau,                   &
-                                knode_gl, "FLUXES",                            &
-                          canopy%fe + canopy%fh )
-         ENDIF
-                
+         CALL astep_post_cbm() 
+               
       END DO ! END Do loop over timestep ktau
 
+      call PostAstepLoop
 
+   !END DO
 
-!jhan: post astep_loop
-call PostAstepLoop
-  
-   
-
-!   END DO
-
-!jhan: post spinloop
-call PostSpinLoop
+   call PostSpinLoop
    
    ! Close log file
    CLOSE(logn)
 
 CONTAINS
+
+!###############################################################################
 
 subroutine headerstep()
    ! Open, read and close the namelist file.
@@ -318,7 +268,71 @@ subroutine headerstep()
    
    ! Open output file:
    CALL open_output_file( dels, soil, veg, bgc, rough )
+
 end subroutine headerstep
+
+!###############################################################################
+
+subroutine astep_header()         
+         ! somethings (e.g. CASA-CNP) only need to be done once per day  
+         ktauday=int(24.0*3600.0/dels)
+         idoy = mod(ktau/ktauday,365)
+         IF(idoy==0) idoy=365
+         
+         ! needed for CASA-CNP
+         nyear =INT((kend-kstart+1)/(365*ktauday))
+   
+         canopy%oldcansto=canopy%cansto
+   
+         ! Feedback prognostic vcmax and daily LAI from casaCNP to CABLE
+         IF (l_vcmaxFeedbk) CALL casa_feedback( ktau, veg, casabiome,    &
+                                                casapool, casamet )
+   
+         IF (l_laiFeedbk) veg%vlai(:) = casamet%glai(:)
+   
+         ! Get met data and LAI, set time variables.
+         ! Rainfall input may be augmented for spinup purposes:
+          met%ofsd = met%fsd(:,1) + met%fsd(:,2)
+         
+End subroutine astep_header         
+
+!###############################################################################
+
+subroutine astep_post_cbm() 
+
+         !jhan this is insufficient testing. condition for 
+         !spinup=.false. & we want CASA_dump.nc (spinConv=.true.)
+         IF(icycle >0) THEN
+            call bgcdriver( ktau, kstart, kend, dels, met,                     &
+                            ssnow, canopy, veg, soil, casabiome,               &
+                            casapool, casaflux, casamet, casabal,              &
+                            phen, spinConv, spinup, ktauday, idoy,             &
+                            .FALSE., .FALSE. )
+         ENDIF 
+   
+         ! sumcflux is pulled out of subroutine cbm
+         ! so that casaCNP can be called before adding the fluxes (Feb 2008, YP)
+         CALL sumcflux( ktau, kstart, kend, dels, bgc,                         &
+                        canopy, soil, ssnow, sum_flux, veg,                    &
+                        met, casaflux, l_vcmaxFeedbk )
+   
+         ! Write time step's output to file if either: we're not spinning up 
+         ! or we're spinning up and the spinup has converged:
+         IF((.NOT.spinup).OR.(spinup.AND.spinConv))                            &
+            CALL write_output( dels, ktau, met, canopy, ssnow,                 &
+                               rad, bal, air, soil, veg, C%SBOLTZ,             &
+                               C%EMLEAF, C%EMSOIL )
+   
+         ! dump bitwise reproducible testing data
+         IF( cable_user%RUN_DIAG_LEVEL == 'zero') THEN
+            IF((.NOT.spinup).OR.(spinup.AND.spinConv))                         &
+               call cable_diag( 1, "FLUXES", mp, kend, ktau,                   &
+                                knode_gl, "FLUXES",                            &
+                          canopy%fe + canopy%fh )
+         ENDIF
+End subroutine astep_post_cbm 
+ 
+!###############################################################################
 
 subroutine PostAstepLoop()
       !jhan this is insufficient testing. condition for 
@@ -384,6 +398,7 @@ subroutine PostAstepLoop()
       END IF
 End subroutine PostAstepLoop
  
+!###############################################################################
  
 subroutine PostSpinLoop()
    IF (icycle > 0) THEN
@@ -440,6 +455,7 @@ subroutine PostSpinLoop()
    ENDIF
 End subroutine PostSpinLoop
 
+!###############################################################################
 
 end subroutine cable_offline_driver
 
