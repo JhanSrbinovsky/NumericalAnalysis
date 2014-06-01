@@ -1,16 +1,28 @@
 /nbproject/
 
-build/new_sumbal
+offline/.tmp/
+
+*.o
 
 .tmp/
 
 *.txt
 
-*.history
+*.mod
 
 test_offline/src/.Rhistory
 
+*.history
+
 *.nc
+
+build/new_sumbal
+
+.tmp
+
+*.txt
+
+*.history
 
 offline/.tmp/
 

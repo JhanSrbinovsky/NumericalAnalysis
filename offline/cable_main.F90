@@ -2,6 +2,7 @@
 program cable_main
 
    use cable_driver_module
+   use cable_driver1_module
    use cable_def_types_mod
    use cable_Duplicate_types_mod, ONLY : TdupVars
    use cable_Buffer_types_mod, only : TBufVars
@@ -36,10 +37,28 @@ program cable_main
    type (TdupVars), save :: dup
    type (TbufVars), save :: buf
 
-   call cable_offline_driver( met, air, canopy, rad, rough, &
-                          ssnow, soil, veg, bal,        &
-                          sum_flux, bgc, &
-                          casabiome, casapool, casaflux, &
-                          casamet, casabal, phen, dup, buf ) 
+   character(len=4) :: driver
 
+   IF( IARGC() > 0 ) THEN
+      CALL GETARG(1, driver)
+   ENDIF
+
+   IF( driver == "orig" ) THEN
+
+      call cable_orig_driver( met, air, canopy, rad, rough, &
+                             ssnow, soil, veg, bal,        &
+                             sum_flux, bgc, &
+                             casabiome, casapool, casaflux, &
+                             casamet, casabal, phen, dup, buf ) 
+
+   ELSE
+
+      call cable_offline_driver( met, air, canopy, rad, rough, &
+                             ssnow, soil, veg, bal,        &
+                             sum_flux, bgc, &
+                             casabiome, casapool, casaflux, &
+                             casamet, casabal, phen, dup, buf )
+      
+   ENDIF
+       
 end program cable_main
