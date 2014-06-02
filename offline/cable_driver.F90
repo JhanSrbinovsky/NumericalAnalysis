@@ -142,7 +142,7 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
    
    ! outer loop - spinup loop no. ktau_tot :
    ktau_tot = 0 
-   
+   ! spin loop - exits when conditionally met
    !DO
 
       ! globally (WRT code) accessible kend through USE cable_common_module
@@ -163,6 +163,14 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
 
          CALL get_met_data( spinup, spinConv, met, soil,                    &
                             rad, veg, kend, dels, C%TFRZ, ktau ) 
+   
+         ! CALL land surface scheme for this timestep, all grid points:
+         CALL cbm( dels, air, bgc, canopy, met,                             &
+                   bal, rad, rough, soil, ssnow,                            &
+                   sum_flux, veg )
+   
+         !CALL get_met_data( spinup, spinConv, met, soil,                    &
+         !                   rad, veg, kend, dels, C%TFRZ, ktau ) 
    
          ! CALL land surface scheme for this timestep, all grid points:
          CALL cbm( dels, air, bgc, canopy, met,                             &
