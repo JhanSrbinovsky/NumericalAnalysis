@@ -163,19 +163,35 @@ subroutine cable_offline_driver( met, air, canopy, rad, rough, &
 
          CALL get_met_data( spinup, spinConv, met, soil,                    &
                             rad, veg, kend, dels, C%TFRZ, ktau ) 
-   
+ 
+         call set_DupVars( ktau, dup, met, bgc, soil, veg, ssnow, canopy, &
+                        rad, rough, air )
+
+         !print *,"jhan:STOP"
+         !STOP
+         !JHAN: below re-sets these vars to NaN. "
+         !!" therefore suggests they cannot be reset safely
+         !JHAN: and need to be recorded at ktau level
+         !CALL reset_cable_vars()
+ 
          ! CALL land surface scheme for this timestep, all grid points:
          CALL cbm( dels, air, bgc, canopy, met,                             &
                    bal, rad, rough, soil, ssnow,                            &
                    sum_flux, veg )
    
+         CALL CABLE_error_log( "cbm finished" )
+         
          !CALL get_met_data( spinup, spinConv, met, soil,                    &
          !                   rad, veg, kend, dels, C%TFRZ, ktau ) 
-   
-         ! CALL land surface scheme for this timestep, all grid points:
-         CALL cbm( dels, air, bgc, canopy, met,                             &
-                   bal, rad, rough, soil, ssnow,                            &
-                   sum_flux, veg )
+
+         !! resets met data per ktau from the copies made previously 
+         !! store in arrays with ktau element
+         !call reset_DupVars( ktau, dup, met, bgc, soil,veg, ssnow, canopy, & 
+         !rad, rough, air )
+         
+         !CALL cbm( dels, air, bgc, canopy, met,                             &
+         !          bal, rad, rough, soil, ssnow,                            &
+         !          sum_flux, veg )
    
          ssnow%smelt = ssnow%smelt*dels
          ssnow%rnof1 = ssnow%rnof1*dels
@@ -304,6 +320,22 @@ subroutine astep_header()
          
 End subroutine astep_header         
 
+!###############################################################################
+
+subroutine reset_cable_vars()
+   CALL alloc_cbm_var(air,    mp)
+   !CALL alloc_cbm_var(bgc,   mp)
+   CALL alloc_cbm_var(canopy,mp)
+   CALL alloc_cbm_var(met,   mp)
+   !CALL alloc_cbm_var(bal,   mp)
+   CALL alloc_cbm_var(rad,   mp)
+   CALL alloc_cbm_var(rough, mp)
+   !CALL alloc_cbm_var(soil,  mp)
+   !CALL alloc_cbm_var(ssnow, mp)
+   !CALL alloc_cbm_var(veg,   mp)
+   !CALL alloc_cbm_var(sum_flux, mp)
+End subroutine reset_cable_vars
+ 
 !###############################################################################
 
 subroutine astep_post_cbm() 
